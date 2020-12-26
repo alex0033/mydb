@@ -27,12 +27,6 @@ while true do
         # == と && の優先順位、Dir.existの反対コマンドの存在
         if thing == "database" && $database_name.nil? && !Dir.exist?(database_directroy)
             Dir.mkdir database_directroy
-            # データベース名がしっかり作られた場合、データベース名を設定する
-            # この仕様は悩み所
-            # database_name = name
-            # elseの情報があると親切
-            # 仕様：データベースを作っても自動接続しない設定にしよ
-            # database_name = name if Dir.exist?(database_directroy)# && file exist?
         elsif thing == "table" && table_file && !File.exist?(table_file)
             open(table_file, "a") do |f|
                 f.puts "id&SP&created_at&SP&updated_at"
@@ -57,7 +51,7 @@ while true do
         name = orders[1]
         database_directroy = "#{$user_directory}/#{name}"
         # elseの情報があると親切
-        database_name = name if Dir.exist?(database_directroy)
+        $database_name = name if Dir.exist?(database_directroy)
     when "select"
         # ココからコンパイラのような高度なテキスト処理
     when "exit"
