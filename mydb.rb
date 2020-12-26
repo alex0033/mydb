@@ -7,6 +7,13 @@ user_directory = "#{socket}/#{name}"
 Dir.mkdir user_directory unless Dir.exist?(user_directory)
 puts ARGV.inspect
 
+def set_values(thing, name, database_name)
+    database_directroy = "#{user_directory}/#{database_name || name}"
+    # nilにナルのかテストが必要
+    table_file = "#{database_directroy}/#{name}.csv" if thing == "table"
+    return thing, name, database_directroy, table_file
+end
+
 while true do
     print "#{name}>"
     print "#{database_name}>" if database_name
@@ -16,15 +23,14 @@ while true do
     case command
     when "create"
         # 共通化？？①
-        thing = orders[1]
-        name = orders[2]
-        database_directroy = "#{user_directory}/#{database_name || name}"
-        table_file = "#{database_directroy}/#{name}.csv"
+        thing, name, database_directroy, table_file = set_values(orders[1], orders[2], database_name)
         # == と && の優先順位、Dir.existの反対コマンドの存在
         if thing == "database" && database_name.nil? && !Dir.exist?(database_directroy)
             Dir.mkdir database_directroy
             # データベース名がしっかり作られた場合、データベース名を設定する
-            database_name = name if Dir.exist?(database_directroy) &&#file exist?
+            # elseの情報があると親切
+            # 仕様：データベースを作っても自動接続しない設定にしよ
+            # database_name = name if Dir.exist?(database_directroy)# && file exist?
         elsif thing == "table" && database_name
             open(table_file, "a") do |f|
                 f.puts "id&SP&created_at&SP&updated_at"
@@ -35,89 +41,26 @@ while true do
     when "drop"
         # 共通化？？①
         # 怪しい
-        thing = orders[1]
-        name = orders[2]
-        database_directroy = "#{user_directory}/#{database_name || name}"
-        table_file = "#{database_directroy}/#{name}.csv"
+        thing, name, database_directroy, table_file = set_values(orders[1], orders[2], database_name)
         # == と && の優先順位、Dir.existの反対コマンドの存在
-        if thing == "database" && database_name && Dir.exist?(database_directroy)
+        if thing == "database" && Dir.exist?(database_directroy)
             Dir.rmdir database_directroy
-            database_name = nil
+            database_name = nil if database_name == name
         elsif thing == "table" && database_name
             # file削除
         else
             # データベースの未設定、ファイルのかぶり、エトセトラのミス
         end
     when "use"
-        database_name = orders[1]
-        database_directroy = "#{user_directory}/#{database_name}"
-        database_name = nil unless Dir.exist?(database_directroy)
+        name = orders[1]
+        database_directroy = "#{user_directory}/#{name}"
+        # elseの情報があると親切
+        database_name = name if Dir.exist?(database_directroy)
+    when "select"
+        # ココからコンパイラのような高度なテキスト処理
     when "exit"
         break;
     else
         puts "そのコマンドは使えません"
     end
-    # 下記はリファクタリング前
-    # if database_name.nil?
-        # case command
-        # when "create"
-        #     # 共通化？？①
-        #     thing = orders[1]
-        #     database_name = orders[2]
-        #     database_directroy = "#{user_directory}/#{database_name}"
-        #     if thing == "database"
-        #         if Dir.exist?(database_directroy)
-        #             puts "そのデータベースは既に存在しています。"
-        #             puts "データベースを選択： use #{database_name}"
-        #             database_name = nil
-        #             next
-        #         end
-        #         Dir.mkdir database_directroy
-        #         # データベース名が万が一不正だった場合、データベース名を未設定にする
-        #         database_name = nil unless Dir.exist?(database_directroy)
-        #     end
-        # when "drop"
-        #     # 共通化？？①
-        #     # 怪しい
-        #     thing = orders[1]
-        #     database_name = orders[2]
-        #     database_directroy = "#{user_directory}/#{database_name}"
-        #     if thing == "database"
-        #         if Dir.exist?(database_directroy)
-        #             Dir.rmdir database_directroy
-        #             database_name = nil
-        #             next
-        #         end
-        #         puts "そのようなデータベースは既に存在しません。"
-        #     end
-        # when "use"
-        #     database_name = orders[1]
-        #     database_directroy = "#{user_directory}/#{database_name}"
-        #     database_name = nil unless Dir.exist?(database_directroy)
-        # when "exit"
-        #     break;
-        # else
-        #     puts "そのコマンドは使えません"
-        #     puts "データベース作成"
-        #     puts "データベースを選択"
-        # end
-    # else
-        # case command
-        # when "create"
-        #     thing = orders[1]
-        #     if thing == "table"
-        #         table_name = orders[2]
-        #         open("#{socket}/#{database_name}/#{table_name}.csv", "a") do |f|
-        #             f.puts "id&SP&created_at&SP&updated_at"
-        #         end
-        #     else
-        #         out
-        #     end
-        # when "exit"
-        #     break
-        # else
-        #     puts "そのコマンドは使えません"
-        #     # テーブルに対するヘルプ
-        # end 
-    # end
 end
