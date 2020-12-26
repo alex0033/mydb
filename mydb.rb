@@ -37,7 +37,7 @@ while true do
     when "drop"
         # 共通化？？①
         # 怪しい
-        thing, name, database_directroy, table_file = set_values(orders[1], orders[2], database_name)
+        thing, name, database_directroy, table_file = set_values(orders[1], orders[2])
         # == と && の優先順位、Dir.existの反対コマンドの存在
         if thing == "database" && Dir.exist?(database_directroy)
             Dir.rmdir database_directroy

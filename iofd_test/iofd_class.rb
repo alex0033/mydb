@@ -118,6 +118,7 @@ class Iofd
                     expected_output = content[:output]
                     expected_input = content[:input]
                     i.expect(expected_output, 10) do |line|
+                        puts line.inspect
                         # 以下二行で正確な文字列チェック
                         output = line[0].gsub(/[\n\r]/,"")
                         @error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output

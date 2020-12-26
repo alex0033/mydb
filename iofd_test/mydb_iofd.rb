@@ -29,12 +29,33 @@ iofd "create database database_name" do |iofd|
     iofd
 end
 
-iofd "create database database_name" do |iofd|
+iofd "use database_name" do |iofd|
     iofd.directory_data_in_test = directory_data_with_database
     iofd.io_contents = [
         { output: "#{user_name}>", input: "use #{database_name}" },
         { output: "#{user_name}>#{database_name}>", input: "exit" }
     ]
     iofd.directories = ["#{user_dir}/#{database_name}"]
+    iofd
+end
+
+iofd "drop database database_name when use database_name" do |iofd|
+    iofd.directory_data_in_test = directory_data_with_database
+    iofd.io_contents = [
+        { output: "#{user_name}>", input: "use #{database_name}" },
+        { output: "#{user_name}>#{database_name}>", input: "drop database #{database_name}" },
+        { output: "#{user_name}", input: "exit" }
+    ]
+    iofd.remove_directories = ["#{user_dir}/#{database_name}"]
+    iofd
+end
+
+iofd "drop database database_name when not use database" do |iofd|
+    iofd.directory_data_in_test = directory_data_with_database
+    iofd.io_contents = [
+        { output: "#{user_name}>", input: "drop database #{database_name}" },
+        { output: "#{user_name}", input: "exit" }
+    ]
+    iofd.remove_directories = ["#{user_dir}/#{database_name}"]
     iofd
 end
