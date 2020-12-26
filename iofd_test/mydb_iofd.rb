@@ -2,15 +2,28 @@ require './iofd_test/test_core.rb'
 
 user_name = "test_user"
 socket = "test_user_dir"
-set_cmd("ruby #{user_name} #{socket}")
+user_dir = "#{socket}/#{user_name}"
+set_cmd("mydb.rb #{user_name} #{socket}")
 
-directory_data = [socket]
+directory_data_at_first_login = [socket]
+directory_data_logged_in = [socket, user_dir]
 
 iofd "login as test_user" do |iofd|
-    iofd.directory_data_in_test = directory_data
+    iofd.directory_data_in_test = directory_data_at_first_login
     iofd.io_contents = [
         { output: "#{user_name}>", input: "exit" }
     ]
-    iofd.directories = ["#{socket}/#{user_name}"]
+    iofd.directories = [user_dir]
     iofd
 end
+
+iofd "create database database_name" do |iofd|
+    iofd.directory_data_in_test = directory_data_logged_in
+    iofd.io_contents = [
+        { output: "#{user_name}>", input: "create database database_name" },
+        { output: "#{user_name}>", input: "exit" }
+    ]
+    iofd.directories = ["#{user_dir}/database_name"]
+    iofd
+end
+
