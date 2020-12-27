@@ -10,7 +10,10 @@ set_cmd("mydb.rb #{user_name} #{socket}")
 directory_data_at_first_login = [socket]
 directory_data_logged_in = [socket, user_dir]
 directory_data_with_database = [socket, user_dir, "#{user_dir}/#{database_name}"]
-file_data_with_table = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
+file_data_with_table = [{
+    to: "#{user_dir}/#{database_name}/#{table_name}.csv",
+    from: "iofd_test/file_data/#{table_name}"
+}]
 
 iofd "login as test_user" do |iofd|
     iofd.directory_data_in_test = directory_data_at_first_login
@@ -84,6 +87,18 @@ iofd "drop database database_name when not use database" do |iofd|
         { output: "#{user_name}", input: "exit" }
     ]
     iofd.remove_directories = ["#{user_dir}/#{database_name}"]
+    iofd
+end
+
+iofd "drop table table_name" do |iofd|
+    iofd.directory_data_in_test = directory_data_with_database
+    iofd.file_data_in_test = file_data_with_table
+    iofd.io_contents = [
+        { output: "#{user_name}>", input: "use #{database_name}" },
+        { output: "#{user_name}>#{database_name}>", input: "drop table #{table_name}" },
+        { output: "#{user_name}>#{database_name}>", input: "exit" }
+    ]
+    iofd.remove_files = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
     iofd
 end
 
