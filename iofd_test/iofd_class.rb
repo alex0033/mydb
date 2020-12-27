@@ -43,19 +43,7 @@ class Iofd
     end
 
     def in_test_environment
-        original_dir = Dir::pwd
-        # コピーディレクトリ作成準備
-        Dir::chdir ".."
-        copy_dir = "#{Dir::pwd}/copy_dir"
-        if Dir.exist? copy_dir || original_dir == copy_dir
-            @error_contents.push "テスト環境が準備できません"
-            test_error
-            Dir::chdir original_dir
-            return
-        end
-        # コピーディレクトリ作成と移動
-        FileUtils.cp_r original_dir, copy_dir
-        Dir::chdir copy_dir
+        return if make_test_environment
         # 下記でtestを実施
         in_test_data do
             begin
@@ -65,17 +53,36 @@ class Iofd
                 test_error
             end
         end
-        # 状態のリセット
+        remove_test_environment
+    end
+
+    # 戻り値またはメソッド名に関して、変更の余地がある
+    def make_test_environment
+        @original_dir = Dir::pwd
+        # コピーディレクトリ作成準備
         Dir::chdir ".."
-        FileUtils.rm_rf copy_dir
-        Dir::chdir original_dir
+        @copy_dir = "#{Dir::pwd}/copy_dir"
+        if Dir.exist? @copy_dir || @original_dir == @copy_dir
+            @error_contents.push "テスト環境が準備できません"
+            test_error
+            Dir::chdir @original_dir
+            return true
+        end
+        # コピーディレクトリ作成と移動
+        FileUtils.cp_r @original_dir, @copy_dir
+        Dir::chdir @copy_dir
+        false
+    end
+
+    def remove_test_environment
+        FileUtils.rm_rf @copy_dir
+        Dir::chdir @original_dir
     end
 
     def in_test_data
         make_test_data
         yield
-        remove_test_data
-        
+        remove_test_data 
     end
 
     def make_test_data
@@ -103,7 +110,7 @@ class Iofd
     end
 
     def all_tests
-        io_contents_test
+        exec_cmd
         files_test
         directories_test
         remove_files_test
@@ -111,30 +118,33 @@ class Iofd
         test_error? ? test_error : puts("success #{@test_name}".green)
     end
 
-    def io_contents_test
+    def exec_cmd
         begin
             PTY.getpty(@@cmd) do |i, o, pid|
-                @io_contents.each do |content|
-                    expected_output = content[:output]
-                    expected_input = content[:input]
-                    i.expect(expected_output, 10) do |line|
-                        puts line.inspect
-                        # 以下二行で正確な文字列チェック
-                        output = line[0].gsub(/[\n\r]/,"")
-                        @error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
-                        # 下記if文の塊のおかげで
-                        if expected_input
-                            o.puts expected_input
-                            i.expect expected_input
-                        end
-                    end
-                end
+                io_contents_test(i, o)
                 # 下記コードでコマンドの終了待ち
                 # これによりディレクトリやファイル作成が反映される
                 Process.wait pid
             end
         rescue => error
             @error_contents.push error
+        end
+    end
+
+    def io_contents_test(i, o)
+        @io_contents.each do |content|
+            expected_output = content[:output]
+            expected_input = content[:input]
+            i.expect(expected_output, 10) do |line|
+                # 以下二行で正確な文字列チェック
+                output = line[0].gsub(/[\n\r]/,"")
+                @error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
+                # 下記if文の塊のおかげで
+                if expected_input
+                    o.puts expected_input
+                    i.expect expected_input
+                end
+            end
         end
     end
 

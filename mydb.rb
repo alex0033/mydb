@@ -32,7 +32,7 @@ while true do
                 f.puts "id&SP&created_at&SP&updated_at"
             end
         else
-            # データベースの未設定、ファイルのかぶり、エトセトラのミス
+            puts "\"create\"以後の書き方に誤りがあります。"
         end
     when "drop"
         # 共通化？？①
@@ -45,7 +45,7 @@ while true do
         elsif thing == "table" && $database_name
             # file削除
         else
-            # データベースの未設定、ファイルのかぶり、エトセトラのミス
+            puts "\"drop\"以後の書き方に誤りがあります。"
         end
     when "use"
         name = orders[1]
@@ -55,7 +55,7 @@ while true do
     when "select"
         # ココからコンパイラのような高度なテキスト処理
     when "exit"
-        break;
+        break
     else
         puts "そのコマンドは使えません"
     end
