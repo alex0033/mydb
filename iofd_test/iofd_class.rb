@@ -2,6 +2,7 @@ require 'pty'
 require 'expect'
 require 'fileutils'
 
+# iofd_test/comparion_filesなどのファイルパスを出力する関数？？
 class Iofd
     attr_writer :io_contents, :files, :remove_files,
                 :directories, :remove_directories,

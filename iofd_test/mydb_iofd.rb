@@ -4,11 +4,13 @@ user_name = "test_user"
 socket = "test_user_dir"
 user_dir = "#{socket}/#{user_name}"
 database_name = "database_name"
+table_name = "table_name"
 set_cmd("mydb.rb #{user_name} #{socket}")
 
 directory_data_at_first_login = [socket]
 directory_data_logged_in = [socket, user_dir]
 directory_data_with_database = [socket, user_dir, "#{user_dir}/#{database_name}"]
+file_data_with_table = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
 
 iofd "login as test_user" do |iofd|
     iofd.directory_data_in_test = directory_data_at_first_login
@@ -50,6 +52,20 @@ iofd "use database_name" do |iofd|
     iofd
 end
 
+iofd "create table table_name" do |iofd|
+    iofd.directory_data_in_test = directory_data_with_database
+    iofd.io_contents = [
+        { output: "#{user_name}>", input: "use #{database_name}" },
+        { output: "#{user_name}>#{database_name}>", input: "create table #{table_name}" },
+        { output: "#{user_name}>#{database_name}>", input: "exit" }
+    ]
+    iofd.files = [{ 
+        original: "#{user_dir}/#{database_name}/#{table_name}.csv",
+        comparison: "/iofd_test/comparison_files/#{table_name}"
+    }]
+    iofd
+end
+
 iofd "drop database database_name when use database_name" do |iofd|
     iofd.directory_data_in_test = directory_data_with_database
     iofd.io_contents = [
@@ -84,7 +100,7 @@ end
 iofd "create database database_name again" do |iofd|
     iofd.directory_data_in_test = directory_data_with_database
     iofd.io_contents = [
-        { output: "#{user_name}>", input: "create database database_name" },
+        { output: "#{user_name}>", input: "create database #{database_name}" },
         { output: "\"create\"以後の書き方に誤りがあります。", input: nil },
         { output: "#{user_name}", input: "exit" }
     ]
@@ -105,7 +121,7 @@ end
 iofd "drop database database_name when database_name not exist" do |iofd|
     iofd.directory_data_in_test = directory_data_at_first_login
     iofd.io_contents = [
-        { output: "#{user_name}>", input: "drop database database_name" },
+        { output: "#{user_name}>", input: "drop database #{database_name}" },
         { output: "\"drop\"以後の書き方に誤りがあります。" },
         { output: "#{user_name}", input: "exit" }
     ]

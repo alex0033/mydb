@@ -29,7 +29,7 @@ while true do
         if thing == "database" && database_name.nil? && !Dir.exist?(database_directroy)
             Dir.mkdir database_directroy
         elsif thing == "table" && table_file && !File.exist?(table_file)
-            open(table_file, "a") do |f|
+            open(table_file, "w") do |f|
                 f.puts "id&SP&created_at&SP&updated_at"
             end
         else
@@ -43,8 +43,8 @@ while true do
         if thing == "database" && Dir.exist?(database_directroy)
             Dir.rmdir database_directroy
             database_name = nil if database_name == name
-        elsif thing == "table" && database_name
-            # file削除
+        elsif thing == "table" && database_name && File.exist?(table_file)
+            File.delete table_file
         else
             puts "\"drop\"以後の書き方に誤りがあります。"
         end
