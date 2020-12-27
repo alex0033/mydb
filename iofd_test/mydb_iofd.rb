@@ -4,12 +4,14 @@ user_name = "test_user"
 socket = "test_user_dir"
 user_dir = "#{socket}/#{user_name}"
 database_name = "database_name"
+another_database_name = "another_database_name"
 table_name = "table_name"
 set_cmd("mydb.rb #{user_name} #{socket}")
 
 directory_data_at_first_login = [socket]
 directory_data_logged_in = [socket, user_dir]
 directory_data_with_database = [socket, user_dir, "#{user_dir}/#{database_name}"]
+directory_data_with_another_database = [socket, user_dir, "#{user_dir}/#{database_name}", "#{user_dir}/#{another_database_name}"]
 file_data_with_table = [{
     to: "#{user_dir}/#{database_name}/#{table_name}.csv",
     from: "iofd_test/file_data/#{table_name}"
@@ -58,7 +60,7 @@ part "create" do
             iofd.directory_data_in_test = directory_data_with_database
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "create database #{database_name}" },
-                { output: "\"create\"以後の書き方に誤りがあります。", input: nil },
+                { output: "\"create\"以後の書き方に誤りがあります。" },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd.directories = ["#{user_dir}/#{database_name}"]
@@ -80,6 +82,22 @@ part "create" do
             }]
             iofd
         end
+
+        iofd "create table table_name again" do |iofd|
+            iofd.directory_data_in_test = directory_data_with_database
+            iofd.file_data_in_test = file_data_with_table
+            iofd.io_contents = [
+                { output: "#{user_name}>", input: "use #{database_name}" },
+                { output: "#{user_name}>#{database_name}>", input: "create table #{table_name}" },
+                { output: "\"create\"以後の書き方に誤りがあります。" },
+                { output: "#{user_name}>#{database_name}>", input: "exit" }
+            ]
+            iofd.files = [{ 
+                original: "#{user_dir}/#{database_name}/#{table_name}.csv",
+                comparison: "/iofd_test/comparison_files/#{table_name}"
+            }]
+            iofd
+        end
     end
 
     part "create another" do
@@ -87,7 +105,7 @@ part "create" do
             iofd.directory_data_in_test = directory_data_at_first_login
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "create miss_spell aaa" },
-                { output: "\"create\"以後の書き方に誤りがあります。", input: nil },
+                { output: "\"create\"以後の書き方に誤りがあります。" },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd
@@ -125,6 +143,7 @@ part "drop" do
                 { output: "\"drop\"以後の書き方に誤りがあります。" },
                 { output: "#{user_name}", input: "exit" }
             ]
+            iofd.remove_directories = ["#{user_dir}/#{database_name}"]
             iofd
         end
     end
@@ -140,7 +159,19 @@ part "drop" do
             ]
             iofd.remove_files = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
             iofd
-        end        
+        end
+        
+        iofd "drop table table_name when file_name not exist" do |iofd|
+            iofd.directory_data_in_test = directory_data_with_database
+            iofd.io_contents = [
+                { output: "#{user_name}>", input: "use #{database_name}" },
+                { output: "#{user_name}>#{database_name}>", input: "drop table #{table_name}" },
+                { output: "\"drop\"以後の書き方に誤りがあります。" },
+                { output: "#{user_name}>#{database_name}>", input: "exit" }
+            ]
+            iofd.remove_files = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
+            iofd
+        end
     end
 
     part "drop another" do
@@ -165,5 +196,38 @@ part "use" do
         ]
         iofd.directories = ["#{user_dir}/#{database_name}"]
         iofd
-    end    
+    end
+
+    iofd "use another_database_name when use database_name" do |iofd|
+        iofd.directory_data_in_test = directory_data_with_another_database
+        iofd.io_contents = [
+            { output: "#{user_name}>", input: "use #{database_name}" },
+            { output: "#{user_name}>#{database_name}>", input: "use #{another_database_name}" },
+            { output: "#{user_name}>#{another_database_name}>", input: "exit" }
+        ]
+        iofd.directories = ["#{user_dir}/#{database_name}"]
+        iofd
+    end
+
+    iofd "use database_name when not databas_name exist" do |iofd|
+        iofd.directory_data_in_test = directory_data_logged_in
+        iofd.io_contents = [
+            { output: "#{user_name}>", input: "use #{database_name}" },
+            { output: "そのようなデータベースは存在しません" },
+            { output: "#{user_name}>", input: "exit" }
+        ]
+        iofd.remove_directories = ["#{user_dir}/#{database_name}"]
+        iofd
+    end
+
+    iofd "use not_exist_database_name when use dabase_name" do |iofd|
+        iofd.directory_data_in_test = directory_data_with_database
+        iofd.io_contents = [
+            { output: "#{user_name}>", input: "use #{database_name}" },
+            { output: "#{user_name}>#{database_name}>", input: "use not_exist_database_name" },
+            { output: "そのようなデータベースは存在しません" },
+            { output: "#{user_name}>#{database_name}>", input: "exit" }
+        ]
+        iofd
+    end
 end

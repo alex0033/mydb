@@ -51,8 +51,11 @@ while true do
     when "use"
         name = orders[1]
         database_directroy = "#{user_directory}/#{name}"
-        # elseの情報があると親切
-        database_name = name if Dir.exist?(database_directroy)
+        if Dir.exist?(database_directroy)
+            database_name = name
+        else
+            puts "そのようなデータベースは存在しません"
+        end
     when "select"
         # ココからコンパイラのような高度なテキスト処理
     when "exit"
