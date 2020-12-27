@@ -206,6 +206,7 @@ part "use" do
             { output: "#{user_name}>#{another_database_name}>", input: "exit" }
         ]
         iofd.directories = ["#{user_dir}/#{database_name}"]
+        iofd.directories = ["#{user_dir}/#{another_database_name}"]
         iofd
     end
 
