@@ -9,9 +9,9 @@ table_name = "table_name"
 set_cmd("mydb.rb #{user_name} #{socket}")
 
 directory_data_at_first_login = [socket]
-directory_data_logged_in = [socket, user_dir]
-directory_data_with_database = [socket, user_dir, "#{user_dir}/#{database_name}"]
-directory_data_with_another_database = [socket, user_dir, "#{user_dir}/#{database_name}", "#{user_dir}/#{another_database_name}"]
+directory_data_logged_in = directory_data_at_first_login + [user_dir]
+directory_data_with_database = directory_data_logged_in + ["#{user_dir}/#{database_name}"]
+directory_data_with_another_database = directory_data_with_database + ["#{user_dir}/#{another_database_name}"]
 file_data_with_table = [{
     to: "#{user_dir}/#{database_name}/#{table_name}.csv",
     from: "iofd_test/file_data/#{table_name}"
@@ -125,7 +125,7 @@ part "drop" do
             iofd.remove_directories = ["#{user_dir}/#{database_name}"]
             iofd
         end
-        
+
         iofd "drop database database_name when not use database" do |iofd|
             iofd.directory_data_in_test = directory_data_with_database
             iofd.io_contents = [
@@ -135,7 +135,7 @@ part "drop" do
             iofd.remove_directories = ["#{user_dir}/#{database_name}"]
             iofd
         end
-        
+
         iofd "drop database database_name when database_name not exist" do |iofd|
             iofd.directory_data_in_test = directory_data_at_first_login
             iofd.io_contents = [
@@ -147,7 +147,7 @@ part "drop" do
             iofd
         end
     end
- 
+
     part "drop table" do
         iofd "drop table table_name" do |iofd|
             iofd.directory_data_in_test = directory_data_with_database
@@ -160,7 +160,7 @@ part "drop" do
             iofd.remove_files = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
             iofd
         end
-        
+
         iofd "drop table table_name when file_name not exist" do |iofd|
             iofd.directory_data_in_test = directory_data_with_database
             iofd.io_contents = [
