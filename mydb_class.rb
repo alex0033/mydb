@@ -1,3 +1,7 @@
+# アプリの状態を保持するクラス
+# アプリの状態とは：例↓
+# ・ユーザー名は誰か
+# ・使っている(use)データベースはどれか
 class MyDB
     def initialize(user_name, socket)
         @user_name = user_name
@@ -8,7 +12,7 @@ class MyDB
     end
 
     def exec
-        while command_check do
+        while check_command do
         end
     end
 
@@ -28,7 +32,7 @@ class MyDB
         print "#{@database_name}>" if @database_name
     end
 
-    def behavior_of_create(thing, name)
+    def create(thing, name)
         database_directroy, table_file = set_values(thing, name)
         # == と && の優先順位、Dir.existの反対コマンドの存在
         if thing == "database" && @database_name.nil? && !Dir.exist?(database_directroy)
@@ -42,7 +46,7 @@ class MyDB
         end
     end
 
-    def behavior_of_drop(thing, name)
+    def drop(thing, name)
         database_directroy, table_file = set_values(thing, name)
         # == と && の優先順位、Dir.existの反対コマンドの存在
         if thing == "database" && Dir.exist?(database_directroy)
@@ -55,7 +59,7 @@ class MyDB
         end
     end
 
-    def behavior_of_use(name)
+    def use(name)
         database_directroy = "#{@user_directory}/#{name}"
         if Dir.exist?(database_directroy)
             @database_name = name
@@ -64,16 +68,16 @@ class MyDB
         end
     end
 
-    def command_check
+    def check_command
         print_input_assist
         orders = STDIN.gets.split(" ")
         case orders[0]
         when "create"
-            behavior_of_create(orders[1], orders[2])
+            create orders[1], orders[2]
         when "drop"
-            behavior_of_drop(orders[1], orders[2])
+            drop orders[1], orders[2]
         when "use"
-            behavior_of_use(orders[1])
+            use orders[1]
         when "select"
             # ココからコンパイラのような高度なテキスト処理
         when "exit"

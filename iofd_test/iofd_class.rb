@@ -32,15 +32,15 @@ class Iofd
 
     private
 
-    def test_error
+    def fail_test
         puts "fail #{@test_name}".red
         @error_contents.each do |content|
             puts "**#{content}"
         end
     end
 
-    def test_error?
-        @error_contents.any?
+    def succeed_in_test?
+        @error_contents.empty?
     end
 
     def in_test_environment
@@ -48,10 +48,10 @@ class Iofd
         # 下記でtestを実施
         in_test_data do
             begin
-                test_error? ? test_error : yield
+                succeed_in_test? ? yield : fail_test
             rescue => error
                 @error_contents.push error
-                test_error
+                fail_test
             end
         end
         remove_test_environment
@@ -65,7 +65,7 @@ class Iofd
         @copy_dir = "#{Dir::pwd}/copy_dir"
         if Dir.exist? @copy_dir || @original_dir == @copy_dir
             @error_contents.push "テスト環境が準備できません"
-            test_error
+            fail_test
             Dir::chdir @original_dir
             return true
         end
@@ -112,17 +112,17 @@ class Iofd
 
     def all_tests
         exec_cmd
-        files_test
-        directories_test
-        remove_files_test
-        remove_directories_test
-        test_error? ? test_error : puts("success #{@test_name}".green)
+        exec_files_test
+        exec_directories_test
+        exec_remove_files_test
+        exec_remove_directories_test
+        succeed_in_test? ? puts("success #{@test_name}".green) : fail_test
     end
 
     def exec_cmd
         begin
             PTY.getpty(@@cmd) do |i, o, pid|
-                io_contents_test(i, o)
+                exec_io_contents_test(i, o)
                 # 下記コードでコマンドの終了待ち
                 # これによりディレクトリやファイル作成が反映される
                 Process.wait pid
@@ -132,7 +132,7 @@ class Iofd
         end
     end
 
-    def io_contents_test(i, o)
+    def exec_io_contents_test(i, o)
         @io_contents.each do |content|
             expected_output = content[:output]
             expected_input = content[:input]
@@ -149,7 +149,7 @@ class Iofd
         end
     end
 
-    def files_test
+    def exec_files_test
         # filesの存在確認、内容一致の確認ー＞存在しない、内容不一致だとエラーになる
         @files.each do |f|
             if !File.exist?(f[:original])
@@ -160,7 +160,7 @@ class Iofd
         end
     end
 
-    def directories_test
+    def exec_directories_test
         # directoriesの存在確認ー＞存在しないとエラーになる
         @directories.each do |d|
             unless Dir.exist?(d)
@@ -169,7 +169,7 @@ class Iofd
         end
     end
     
-    def remove_files_test
+    def exec_remove_files_test
         # remove_filesの存在確認ー＞存在するとエラーになる
         @remove_files.each do |f|
             if File.exist?(f)
@@ -178,7 +178,7 @@ class Iofd
         end
     end
 
-    def remove_directories_test
+    def exec_remove_directories_test
         # remove_directoriesの存在確認ー＞存在するとエラーになる
         @remove_directories.each do |d|
             if Dir.exist?(d)
@@ -187,3 +187,25 @@ class Iofd
         end
     end
 end
+
+class String
+    def colorize(color_code)
+      "\e[#{color_code}m#{self}\e[0m"
+    end
+
+    def red
+      colorize(31)
+    end
+
+    def green
+      colorize(32)
+    end
+
+    def yellow
+      colorize(33)
+    end
+
+    def pink
+      colorize(35)
+    end
+end    
