@@ -17,6 +17,10 @@ file_data_with_table = [{
     from: "iofd_test/file_data/#{table_name}"
 }]
 
+command_error_message = "そのコマンドは使えません"
+create_error_message = "\"create\"以後の書き方に誤りがあります。"
+drop_error_message = "\"drop\"以後の書き方に誤りがあります。"
+
 # このpart内にputsを置くことで見やすくできる余地あり
 def part(part_name)
     yield
@@ -36,7 +40,7 @@ part "first" do
         iofd.directory_data_in_test = directory_data_at_first_login
         iofd.io_contents = [
             { output: "#{user_name}>", input: "error command" },
-            { output: "そのコマンドは使えません" },
+            { output: command_error_message },
             { output: "#{user_name}>", input: "exit" }
         ]
         iofd.directories = [user_dir]
@@ -60,7 +64,7 @@ part "create" do
             iofd.directory_data_in_test = directory_data_with_database
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "create database #{database_name}" },
-                { output: "\"create\"以後の書き方に誤りがあります。" },
+                { output: create_error_message },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd.directories = ["#{user_dir}/#{database_name}"]
@@ -89,7 +93,7 @@ part "create" do
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "use #{database_name}" },
                 { output: "#{user_name}>#{database_name}>", input: "create table #{table_name}" },
-                { output: "\"create\"以後の書き方に誤りがあります。" },
+                { output: create_error_message },
                 { output: "#{user_name}>#{database_name}>", input: "exit" }
             ]
             iofd.files = [{ 
@@ -105,7 +109,7 @@ part "create" do
             iofd.directory_data_in_test = directory_data_at_first_login
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "create miss_spell aaa" },
-                { output: "\"create\"以後の書き方に誤りがあります。" },
+                { output: create_error_message },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd
@@ -140,7 +144,7 @@ part "drop" do
             iofd.directory_data_in_test = directory_data_at_first_login
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "drop database #{database_name}" },
-                { output: "\"drop\"以後の書き方に誤りがあります。" },
+                { output: drop_error_message },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd.remove_directories = ["#{user_dir}/#{database_name}"]
@@ -149,7 +153,7 @@ part "drop" do
     end
 
     part "drop table" do
-        iofd "drop table table_name" do |iofd|
+        iofd "drop table table_name when use database" do |iofd|
             iofd.directory_data_in_test = directory_data_with_database
             iofd.file_data_in_test = file_data_with_table
             iofd.io_contents = [
@@ -161,12 +165,27 @@ part "drop" do
             iofd
         end
 
+        iofd "drop table database_name when not use table" do |iofd|
+            iofd.directory_data_in_test = directory_data_with_database
+            iofd.file_data_in_test = file_data_with_table
+            iofd.io_contents = [
+                { output: "#{user_name}>", input: "drop table #{table_name}" },
+                { output: drop_error_message },
+                { output: "#{user_name}>", input: "exit" }
+            ]
+            iofd.files = [{ 
+                original: "#{user_dir}/#{database_name}/#{table_name}.csv",
+                comparison: "/iofd_test/comparison_files/#{table_name}"
+            }]
+            iofd
+        end
+
         iofd "drop table table_name when file_name not exist" do |iofd|
             iofd.directory_data_in_test = directory_data_with_database
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "use #{database_name}" },
                 { output: "#{user_name}>#{database_name}>", input: "drop table #{table_name}" },
-                { output: "\"drop\"以後の書き方に誤りがあります。" },
+                { output: drop_error_message },
                 { output: "#{user_name}>#{database_name}>", input: "exit" }
             ]
             iofd.remove_files = ["#{user_dir}/#{database_name}/#{table_name}.csv"]
@@ -179,7 +198,7 @@ part "drop" do
             iofd.directory_data_in_test = directory_data_at_first_login
             iofd.io_contents = [
                 { output: "#{user_name}>", input: "drop miss_spell aaa" },
-                { output: "\"drop\"以後の書き方に誤りがあります。" },
+                { output: drop_error_message },
                 { output: "#{user_name}", input: "exit" }
             ]
             iofd

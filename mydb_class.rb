@@ -25,58 +25,6 @@ class MyDB
         Dir.mkdir user_directory unless Dir.exist?(user_directory)
     end
 
-    # この関数名は分かりにくい
-    # useメソッドへの依存があるため要変更
-    def set_values(thing, name)
-        # 適切なデータベースディレクトリへのパスが入る
-        database_directroy = "#{user_directory}/#{database_name || name}"
-        # nilにナルのかテストが必要
-        table_file = thing == "table" ? "#{database_directroy}/#{name}.csv" : nil
-        return database_directroy, table_file
-    end
-
-    def print_input_assist
-        print "#{user_name}>"
-        print "#{database_name}>" if database_name
-    end
-
-    def create(thing, name)
-        database_directroy, table_file = set_values(thing, name)
-        # == と && の優先順位、Dir.existの反対コマンドの存在
-        if thing == "database" && database_name.nil? && !Dir.exist?(database_directroy)
-            Dir.mkdir database_directroy
-        elsif thing == "table" && table_file && !File.exist?(table_file)
-            open(table_file, "w") do |f|
-                f.puts "id&SP&created_at&SP&updated_at"
-            end
-        else
-            puts "\"create\"以後の書き方に誤りがあります。"
-        end
-    end
-
-    def drop(thing, name)
-        database_directroy, table_file = set_values(thing, name)
-        # == と && の優先順位、Dir.existの反対コマンドの存在
-        if thing == "database" && Dir.exist?(database_directroy)
-            Dir.rmdir database_directroy
-            @database_name = nil if database_name == name
-        elsif thing == "table" && database_name && File.exist?(table_file)
-            File.delete table_file
-        else
-            puts "\"drop\"以後の書き方に誤りがあります。"
-        end
-    end
-
-    def use(name)
-        database_directroy = "#{user_directory}/#{name}"
-        if Dir.exist?(database_directroy)
-            # @database_name = name OR self.database_name = name
-            @database_name = name
-        else
-            puts "そのようなデータベースは存在しません"
-        end
-    end
-
     def check_command
         print_input_assist
         orders = STDIN.gets.split(" ")
@@ -95,5 +43,85 @@ class MyDB
             puts "そのコマンドは使えません"
         end
         true
+    end
+
+    def print_input_assist
+        print "#{user_name}>"
+        print "#{database_name}>" if database_name
+    end
+
+    def create(thing, name)
+        if thing == "database" && database_path = make_path_to_create_database(name)
+            Dir.mkdir database_path
+        elsif thing == "table" && table_path = make_path_to_create_table(name)
+            open(table_path, "w") do |f|
+                f.puts "id&SP&created_at&SP&updated_at"
+            end
+        else
+            puts "\"create\"以後の書き方に誤りがあります。"
+        end
+    end
+
+    def drop(thing, name)
+        if thing == "database" && database_path = make_path_to_drop_database(name)
+            Dir.rmdir database_path
+            @database_name = nil if database_name == name
+        elsif thing == "table" && table_path = make_path_to_drop_table(name)
+            File.delete table_path
+        else
+            puts "\"drop\"以後の書き方に誤りがあります。"
+        end
+    end
+
+    def use(name)
+        database_directroy = "#{user_directory}/#{name}"
+        if Dir.exist?(database_directroy)
+            # @database_name = name OR self.database_name = name
+            @database_name = name
+        else
+            puts "そのようなデータベースは存在しません"
+        end
+    end
+
+    # 以下４つのメソッドは抽象化の余地あり
+    # しかし、可読性の観点からあえてこのままにした
+    def make_path_to_create_database(name)
+        database_path = database_path name
+        if name && !Dir.exist?(database_path)
+            return database_path
+        end
+        nil
+    end
+
+    def make_path_to_create_table(name)
+        table_path = table_path name
+        if name && database_name && !File.exist?(table_path)
+            return table_path
+        end
+        nil
+    end
+
+    def make_path_to_drop_database(name)
+        database_path = database_path name
+        if name && Dir.exist?(database_path)
+            return database_path
+        end
+        nil
+    end
+
+    def make_path_to_drop_table(name)
+        table_path = table_path name
+        if name && database_name && File.exist?(table_path)
+            return table_path
+        end
+        nil
+    end
+
+    def database_path(name)
+        "#{user_directory}/#{name}"
+    end
+
+    def table_path(name)
+        "#{user_directory}/#{database_name}/#{name}.csv"
     end
 end
