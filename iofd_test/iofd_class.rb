@@ -4,9 +4,10 @@ require 'fileutils'
 
 # iofd_test/comparion_filesなどのファイルパスを出力する関数？？
 class Iofd
-    attr_writer :io_contents, :files, :remove_files,
+    attr_accessor :io_contents, :files, :remove_files,
                 :directories, :remove_directories,
                 :file_data_in_test, :directory_data_in_test
+    attr_reader :test_name, :error_contents
 
     def initialize(test_name)
         @test_name = test_name
@@ -33,14 +34,14 @@ class Iofd
     private
 
     def fail_test
-        puts "fail #{@test_name}".red
-        @error_contents.each do |content|
+        puts "fail #{test_name}".red
+        error_contents.each do |content|
             puts "**#{content}"
         end
     end
 
     def succeed_in_test?
-        @error_contents.empty?
+        error_contents.empty?
     end
 
     def in_test_environment
@@ -50,7 +51,7 @@ class Iofd
             begin
                 succeed_in_test? ? yield : fail_test
             rescue => error
-                @error_contents.push error
+                error_contents.push error
                 fail_test
             end
         end
@@ -64,7 +65,7 @@ class Iofd
         Dir::chdir ".."
         @copy_dir = "#{Dir::pwd}/copy_dir"
         if Dir.exist? @copy_dir || @original_dir == @copy_dir
-            @error_contents.push "テスト環境が準備できません"
+            error_contents.push "テスト環境が準備できません"
             fail_test
             Dir::chdir @original_dir
             return true
@@ -87,12 +88,12 @@ class Iofd
     end
 
     def make_test_data
-        @directory_data_in_test.each do |d|
-            Dir.exist?(d) ? @error_contents.push("ディレクトリのデータエラー") : Dir.mkdir(d)
+        directory_data_in_test.each do |d|
+            Dir.exist?(d) ? error_contents.push("ディレクトリのデータエラー") : Dir.mkdir(d)
         end
-        @file_data_in_test.each do |f|
+        file_data_in_test.each do |f|
             if File.exist?(f[:to])
-                @error_contents.push("ファイルのデータエラー")
+                error_contents.push("ファイルのデータエラー")
             elsif f[:from]
                 FileUtils.cp f[:from], f[:to]
             else
@@ -102,10 +103,10 @@ class Iofd
     end
 
     def remove_test_data
-        @file_data_in_test.each do |f|
+        file_data_in_test.each do |f|
             File.delete f[:to] if File.exist? f[:to]
         end
-        @directory_data_in_test.each do |d|
+        directory_data_in_test.each do |d|
             FileUtils.rm_rf d if Dir.exist? d
         end
     end
@@ -116,7 +117,7 @@ class Iofd
         exec_directories_test
         exec_remove_files_test
         exec_remove_directories_test
-        succeed_in_test? ? puts("success #{@test_name}".green) : fail_test
+        succeed_in_test? ? puts("success #{test_name}".green) : fail_test
     end
 
     def exec_cmd
@@ -128,18 +129,18 @@ class Iofd
                 Process.wait pid
             end
         rescue => error
-            @error_contents.push error
+            error_contents.push error
         end
     end
 
     def exec_io_contents_test(i, o)
-        @io_contents.each do |content|
+        io_contents.each do |content|
             expected_output = content[:output]
             expected_input = content[:input]
             i.expect(expected_output, 10) do |line|
                 # 以下二行で正確な文字列チェック
                 output = line[0].gsub(/[\n\r]/,"")
-                @error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
+                error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
                 # 下記if文の塊のおかげで
                 if expected_input
                     o.puts expected_input
@@ -151,38 +152,38 @@ class Iofd
 
     def exec_files_test
         # filesの存在確認、内容一致の確認ー＞存在しない、内容不一致だとエラーになる
-        @files.each do |f|
+        files.each do |f|
             if !File.exist?(f[:original])
-                @error_contents.push "#{f[:original]}が存在しません"
+                error_contents.push "#{f[:original]}が存在しません"
             elsif f[:comparison] && File.exist?(f[:comparison]) && !FileUtils.cmp(f[:original], f[:comparison])
-                @error_contents.push "#{f[:comparison]}と内容が一致しません"
+                error_contents.push "#{f[:comparison]}と内容が一致しません"
             end
         end
     end
 
     def exec_directories_test
         # directoriesの存在確認ー＞存在しないとエラーになる
-        @directories.each do |d|
+        directories.each do |d|
             unless Dir.exist?(d)
-                @error_contents.push "#{d}が存在しません"
+                error_contents.push "#{d}が存在しません"
             end
         end
     end
     
     def exec_remove_files_test
         # remove_filesの存在確認ー＞存在するとエラーになる
-        @remove_files.each do |f|
+        remove_files.each do |f|
             if File.exist?(f)
-                @error_contents.push "#{f}が削除できていません"
+                error_contents.push "#{f}が削除できていません"
             end
         end
     end
 
     def exec_remove_directories_test
         # remove_directoriesの存在確認ー＞存在するとエラーになる
-        @remove_directories.each do |d|
+        remove_directories.each do |d|
             if Dir.exist?(d)
-                @error_contents.push "#{d}が削除できていません"
+                error_contents.push "#{d}が削除できていません"
             end
         end
     end
